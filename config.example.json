@@ -1,0 +1,28 @@
+{
+    "notion": {
+        "api": "2021-05-13",
+        "databases": [
+            {
+                "complete": [],
+                "colors": {
+                    "main": 37,
+                    "sub": 38
+                },
+                "fields": {
+                    "epic": [],
+                    "story": [],
+                    "task": []
+                },
+                "filter": {},
+                "id": "{{ database_id }}",
+                "name": "{{ Project Name }}",
+                "statuses": []
+            }
+        ],
+        "secret": "",
+        "url": "https://api.notion.com/v1/"
+    },
+    "todoist": {
+        "secret": ""
+    }
+}
