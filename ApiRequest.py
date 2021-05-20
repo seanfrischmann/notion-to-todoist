@@ -1,12 +1,19 @@
 import json
 import os
 import sys
-import requests
+
 import todoist
+
+from Notion import Notion
 
 config = []
 with open(os.path.join(sys.path[0], 'config.json')) as configFile:
     config = json.load(configFile)
+
+
+def dumpToFile(name, data):
+    with open(f"{name}.json", 'w') as outfile:
+        json.dump(data, outfile)
 
 
 def main():
@@ -16,9 +23,10 @@ def main():
             print("Config field is missing:", field)
             exit(1)
 
+    notion = Notion(config['notion'])
     todo_projects = getTodoistProjects()
-    for database in config['notion']['databases']:
-        project = normalizeNotionData(database)
+
+    for project in notion.getProjects():
         syncProject(project=project, todo_projects=todo_projects)
 
 
@@ -31,6 +39,8 @@ def syncProject(project: dict, todo_projects: dict):
     else:
         main_project = createTodoistProject(project=project, api=api)
 
+    api.commit()
+
     for epic in project['sub_projects']:
         if epic['name'] in todo_projects and \
                 'parent_id' in todo_projects[epic['name']] and \
@@ -38,12 +48,16 @@ def syncProject(project: dict, todo_projects: dict):
             sub_project = api.projects.get_by_id(todo_projects[epic['name']]['id'])
             sub_project.delete()
 
+        api.commit()
+
         sub_project, sections = createTodoistProject(
             project=epic,
             api=api,
             statuses=project['statuses'],
             parent_id=main_project['id']
         )
+
+        api.commit()
 
         for story in epic['stories']:
             complete = False
@@ -59,158 +73,17 @@ def syncProject(project: dict, todo_projects: dict):
                 complete=complete
             )
 
+            api.commit()
+
     print('Committing project to Todoist')
     api.commit()
     api.reset_state()
     print('All Done')
 
 
-def normalizeNotionData(database: dict):
-    print(f"Getting notion database {database['name']}")
-    notion_database = getNotionDatabase(database['id'], database['filter'])
-    project = {
-        'name': database['name'],
-        'statuses': database['statuses'],
-        'color': database['colors']['main'],
-        'sub_projects': []
-    }
-
-    if 'complete' in database:
-        project['complete'] = database['complete']
-
-    for epic in notion_database['results']:
-        sub_project = {
-            'epic_id': epic['id'],
-            'name': epic['properties']['Name']['title'][0]['plain_text'].replace(' |',
-                                                                                 ':'),
-            'color': database['colors']['sub'],
-            'fields': database['fields']['epic'],
-            'stories': []
-        }
-
-        print(f"Reviewing Epic {sub_project['name']}")
-
-        notion_stories = getNotionChildren(db_id=database['id'], parent_id=epic['id'])
-        for story in notion_stories['results']:
-            task = {
-                'story_id': story['id'],
-                'name': story['properties']['Name']['title'][0]['plain_text'],
-                'description': getNotionDescription(
-                    story['properties']['Description']['rich_text']
-                ),
-                'end_date': '',
-                'fields': database['fields']['story'],
-                'status': '',
-                'sub_tasks': []
-            }
-
-            print(f"Reviewing Story {task['name']}")
-
-            if 'Status' in story['properties']:
-                task['status'] = story['properties']['Status']['select']['name']
-
-            if 'End Date' in story['properties']:
-                task['end_date'] = story['properties']['End Date']['date']['start']
-
-            notion_tasks = getNotionChildren(
-                db_id=database['id'],
-                parent_id=story['id']
-            )
-
-            for sub_task in notion_tasks['results']:
-                status = ''
-
-                if 'Status' in sub_task['properties']:
-                    status = sub_task['properties']['Status']['select']['name']
-
-                task['sub_tasks'].append({
-                    'task_id': sub_task['id'],
-                    'name': sub_task['properties']['Name']['title'][0]['plain_text'],
-                    'description': getNotionDescription(
-                        sub_task['properties']['Description']['rich_text']
-                    ),
-                    'fields': database['fields']['task'],
-                    'status': status
-                })
-
-            sub_project['stories'].append(task)
-
-        project['sub_projects'].append(sub_project)
-
-    return project
-
-
-def getNotionDescription(field):
-    description = ''
-    for item in field:
-        if description:
-            description += f" {item['plain_text']}"
-        else:
-            description = item['plain_text']
-
-    return description
-
-
-def getNotionDatabase(db_id: str, db_filter: dict):
-    """
-    Get Notion Database
-
-    :param db_id:
-    :param db_filter:
-    :return: Notion Obj
-    """
-    endpoint = 'databases/' + db_id + '/query'
-
-    options = {
-        'data': json.dumps({'filter': db_filter})
-    }
-
-    return notionRequest(endpoint=endpoint, request_type='post', options=options)
-
-
-def getNotionChildren(db_id: str, parent_id: str):
-    endpoint = 'databases/' + db_id + '/query'
-
-    options = {
-        'data': json.dumps({
-            'filter': {
-                'property': 'Parent',
-                'relation': {
-                    'contains': parent_id
-                }
-            }
-        })
-    }
-
-    return notionRequest(endpoint=endpoint, request_type='post', options=options)
-
-
-def notionRequest(endpoint: str, request_type: str, options: dict):
-    url = config['notion']['url'] + endpoint
-
-    headers = {
-        'Authorization': f"Bearer {config['notion']['secret']}",
-        'Notion-Version': config['notion']['api'],
-        'Content-Type': 'application/json'
-    }
-
-    return makeRequest(
-        request_type=request_type,
-        url=url,
-        headers=headers,
-        options=options
-    )
-
-
-def makeRequest(request_type: str, url: str, headers: dict, options: dict):
-    if request_type == 'post':
-        response = requests.post(url, headers=headers, data=options['data'])
-        return response.json()
-
-    return {}
-
-
 def getTodoistProjects():
+    import requests
+
     projects = requests.get(
         "https://api.todoist.com/rest/v1/projects",
         headers={"Authorization": f"Bearer {config['todoist']['secret']}"}
@@ -229,8 +102,14 @@ def createTodoistProject(project: dict, api, statuses=False, parent_id=False):
         todoist_project = api.projects.add(
             project['name'],
             parent_id=parent_id,
-            color=project['color']
+            color=project['color'],
         )
+
+        if project['comment']:
+            api.project_notes.add(
+                project_id=todoist_project['id'],
+                content=project['comment']
+            )
     else:
         print(f"Creating Project: {project['name']}")
         todoist_project = api.projects.add(project['name'], color=project['color'])
@@ -247,7 +126,7 @@ def createTodoistProject(project: dict, api, statuses=False, parent_id=False):
 
 def createTodoistTask(task, api, statuses, sections, project_id, complete=False):
     print(f"Creating task {task['name']}")
-    
+
     if complete and task['status'] in complete:
         item = api.quick.add(f"* {task['name']} @Notion-Issue")
     else:
@@ -265,6 +144,9 @@ def createTodoistTask(task, api, statuses, sections, project_id, complete=False)
             sub_item.update(description=sub_task['description'])
             sub_item.move(parent_id=item['id'])
 
+            if sub_task['comment']:
+                api.notes.add(sub_item['id'], content=sub_task['comment'])
+
             if sub_task['status'] == 'Complete':
                 sub_item.complete()
 
@@ -276,6 +158,9 @@ def createTodoistTask(task, api, statuses, sections, project_id, complete=False)
     item.move(project_id=project_id)
     print(f"Adding {task['name']} to section {section}")
     item.move(section_id=f"{sections[section]['id']}")
+
+    if task['comment']:
+        api.notes.add(item['id'], content=task['comment'])
 
 
 if __name__ == '__main__':
