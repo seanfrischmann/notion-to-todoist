@@ -122,8 +122,9 @@ class Todoist:
 
         print(f"Adding {task['name']} task to the project")
         item.move(project_id=self.sub_project['id'])
-        print(f"Adding {task['name']} to section {section}")
-        item.move(section_id=f"{self.sections[section]['id']}")
+        if section in self.sections:
+            print(f"Adding {task['name']} to section {section}")
+            item.move(section_id=f"{self.sections[section]['id']}")
 
         if task['comment']:
             self.api.notes.add(item['id'], content=task['comment'])

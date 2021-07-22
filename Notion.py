@@ -10,8 +10,11 @@ class Notion:
         self.url = config['url']
 
     def getProjects(self):
-        projects = [];
+        projects = []
         for database in self.databases:
+            if "skip" in database and database["skip"]:
+                continue
+
             print(f"Getting notion database {database['name']}")
 
             notion_database = self.getNotionDatabase(
@@ -30,9 +33,13 @@ class Notion:
                 project['complete'] = database['complete']
 
             for epic in notion_database['results']:
+                name = "Title"
+                if "pageNameField" in database:
+                    name = database["pageNameField"]
+
                 sub_project = {
                     'epic_id': epic['id'],
-                    'name': epic['properties']['Name']['title'][0]['plain_text'].replace(
+                    'name': epic['properties'][name]['title'][0]['plain_text'].replace(
                         ' |', ':'),
                     'color': database['colors']['sub'],
                     'comment': self.createComment(
@@ -44,15 +51,25 @@ class Notion:
 
                 print(f"Reviewing Epic {sub_project['name']}")
 
+                parent_field = "Parent"
+                if "parentField" in database:
+                    parent_field = database["parentField"]
+
+                sub_filter = None
+                if "subFilter" in database:
+                    sub_filter = database["subFilter"]
+
                 notion_stories = self.getNotionChildren(
                     db_id=database['id'],
-                    parent_id=epic['id']
+                    parent_id=epic['id'],
+                    parent_field=parent_field,
+                    sub_filter=sub_filter
                 )
 
                 for story in notion_stories['results']:
                     task = {
                         'story_id': story['id'],
-                        'name': story['properties']['Name']['title'][0]['plain_text'],
+                        'name': story['properties'][name]['title'][0]['plain_text'],
                         'description': self.getField(
                             field=story['properties']['Description']
                         ),
@@ -116,17 +133,32 @@ class Notion:
 
         return self.notionRequest(endpoint=endpoint, request_type='post', options=options)
 
-    def getNotionChildren(self, db_id: str, parent_id: str):
+    def getNotionChildren(
+            self,
+            db_id: str,
+            parent_id: str,
+            parent_field: str = "Parent",
+            sub_filter=None
+    ):
         endpoint = 'databases/' + db_id + '/query'
+        children_filter = {
+            'property': parent_field,
+            'relation': {
+                'contains': parent_id
+            }
+        }
+
+        if sub_filter is not None:
+            children_filter = {
+                "and": [
+                    children_filter,
+                    sub_filter
+                ]
+            }
 
         options = {
             'data': json.dumps({
-                'filter': {
-                    'property': 'Parent',
-                    'relation': {
-                        'contains': parent_id
-                    }
-                }
+                'filter': children_filter
             })
         }
 
