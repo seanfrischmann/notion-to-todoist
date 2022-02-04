@@ -29,6 +29,9 @@ class Notion:
                 'sub_projects': []
             }
 
+            if 'taskTag' in database:
+                project['taskTag'] = database['taskTag']
+
             if 'complete' in database:
                 project['complete'] = database['complete']
 

@@ -3,20 +3,56 @@
         "api": "2021-05-13",
         "databases": [
             {
-                "complete": [],
+                "skip": true,
+                "name": "Project Name",
                 "colors": {
-                    "main": 37,
-                    "sub": 38
+                    "main": 33,
+                    "sub": 33
                 },
+                "complete": ["Next Release"],
                 "fields": {
-                    "epic": [],
-                    "story": [],
-                    "task": []
+                    "epic": [
+                        "Sprint Points",
+                        "Status",
+                        "Timeline"
+                    ],
+                    "story": [
+                        "Feature Branch",
+                        "Status",
+                        "Story Points"
+                    ],
+                    "task": [
+                        "Effort Points",
+                        "Feature Branch",
+                        "Status"
+                    ]
                 },
-                "filter": {},
-                "id": "{{ database_id }}",
-                "name": "{{ Project Name }}",
-                "statuses": []
+                "filter": {
+                    "and": [
+                        {
+                            "property": "Type",
+                            "select": {
+                                "equals": "Sprint"
+                            }
+                        },
+                        {
+                            "property": "Status",
+                            "select": {
+                                "equals": "In Progress"
+                            }
+                        }
+                    ]
+                },
+                "subFilter": {
+                    "property": "Engineers",
+                    "people": {
+                        "contains": "{personID}"
+                    }
+                },
+                "id": "{DatabaseID}",
+                "parentField": "Defaults to Parent",
+                "statuses": ["List of different status options"],
+                "taskTag": "Defaults to Notion-Issue // NOTE must exist in ToDoist"
             }
         ],
         "secret": "",

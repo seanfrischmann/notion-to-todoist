@@ -103,7 +103,7 @@ class Todoist:
 
         if task['sub_tasks']:
             for sub_task in task['sub_tasks']:
-                sub_item = self.api.quick.add(f"{sub_task['name']} @Task")
+                sub_item = self.api.quick.add(f"{sub_task['name']} @{tag_name}")
 
                 print(f"Adding subtask {sub_task['name']} to {task['name']}")
                 sub_item = self.api.items.get_by_id(sub_item['id'])
