@@ -88,14 +88,14 @@ class Todoist:
 
         return todoist_project
 
-    def createTodoistTask(self, task, statuses, complete=False):
+    def createTodoistTask(self, task, statuses, complete=False, tag_name="Notion-Issue"):
         print(f"Creating task {task['name']}")
 
         if complete and task['status'] in complete:
-            item = self.api.quick.add(f"* {task['name']} @Notion-Issue")
+            item = self.api.quick.add(f"{task['name']} @{tag_name}")
         else:
             item = self.api.quick.add(
-                f"* {task['name']} @Notion-Issue {task['end_date']}"
+                f"{task['name']} @{tag_name} {task['end_date']}"
             )
 
         item = self.api.items.get_by_id(item['id'])

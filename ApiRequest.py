@@ -23,13 +23,19 @@ class Main:
 
                 for story in epic['stories']:
                     complete = False
+                    task_tag = "Notion-Issue"
+
                     if 'complete' in project:
                         complete = project['complete']
+
+                    if 'taskTag' in project:
+                        task_tag = project['taskTag']
 
                     self.todo.createTodoistTask(
                         task=story,
                         statuses=project['statuses'],
-                        complete=complete
+                        complete=complete,
+                        tag_name=task_tag
                     )
 
                     self.todo.commit()
