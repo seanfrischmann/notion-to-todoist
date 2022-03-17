@@ -95,7 +95,7 @@ class Todoist:
             item = self.api.quick.add(f"{task['name']} @{tag_name}")
         else:
             item = self.api.quick.add(
-                f"{task['name']} @{tag_name} {task['end_date']}"
+                f"{task['name']} @{tag_name} {task['start_date']}"
             )
 
         item = self.api.items.get_by_id(item['id'])
@@ -126,7 +126,7 @@ class Todoist:
             print(f"Adding {task['name']} to section {section}")
             item.move(section_id=f"{self.sections[section]['id']}")
 
-        if task['comment']:
+        if 'comment' in task and task['comment']:
             self.api.notes.add(item['id'], content=task['comment'])
 
     def commit(self):

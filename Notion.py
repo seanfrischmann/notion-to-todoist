@@ -45,7 +45,7 @@ class Notion:
                     'name': epic['properties'][name]['title'][0]['plain_text'].replace(
                         ' |', ':'),
                     'color': database['colors']['sub'],
-                    'comment': self.createComment(
+                    'comment': self.createProperties(
                         fields=database['fields']['epic'],
                         properties=epic['properties']
                     ),
@@ -73,16 +73,18 @@ class Notion:
                     task = {
                         'story_id': story['id'],
                         'name': story['properties'][name]['title'][0]['plain_text'],
-                        'description': self.getField(
-                            field=story['properties']['Description']
-                        ),
+                        'description':
+                            self.createProperties(
+                                fields=database['fields']['story'],
+                                properties=story['properties'],
+                                url=story['url']
+                            ) + "\n" +
+                            self.getField(field=story['properties']['Description'])
+                        ,
                         'end_date': '',
-                        'comment': self.createComment(
-                            fields=database['fields']['story'],
-                            properties=story['properties']
-                        ),
                         'status': '',
-                        'sub_tasks': []
+                        'sub_tasks': [],
+                        'url': story['url']
                     }
 
                     print(f"Reviewing Story {task['name']}")
@@ -90,8 +92,8 @@ class Notion:
                     if 'Status' in story['properties']:
                         task['status'] = story['properties']['Status']['select']['name']
 
-                    if 'End Date' in story['properties']:
-                        task['end_date'] = story['properties']['End Date']['date'][
+                    if 'Start Date' in story['properties']:
+                        task['start_date'] = story['properties']['Start Date']['date'][
                             'start']
 
                     notion_tasks = self.getNotionChildren(
@@ -112,11 +114,12 @@ class Notion:
                             'description': self.getField(
                                 field=sub_task['properties']['Description']
                             ),
-                            'comment': self.createComment(
+                            'comment': self.createProperties(
                                 fields=database['fields']['task'],
                                 properties=sub_task['properties']
                             ),
-                            'status': status
+                            'status': status,
+                            'url': story['url'],
                         })
 
                     sub_project['stories'].append(task)
@@ -193,21 +196,26 @@ class Notion:
 
         return {}
 
-    def createComment(self, fields, properties):
-        comment = ''
+    def createProperties(self, fields, properties, url=False):
+        content = ''
+
+        if url:
+            notionUrl = url.replace('https', 'notion')
+            content = f" --- \n **Ticket:** [Open in Notion]({notionUrl})\n"
+
         for field in fields:
             if field in properties:
                 value = self.getField(properties[field])
-                comment += (
-                    "\n --- \n"
-                    f" #### {field} \n"
-                    f" {value} \n"
+                content += (
+                    f"**{field}:** {value}\n"
                 )
 
-        if comment:
-            comment += " --- "
+        if content and url:
+            content += " --- "
+        elif content:
+            content = f' --- \n {content} --- '
 
-        return comment
+        return content
 
     def getField(self, field):
         if type(field) is list and field:
@@ -235,14 +243,29 @@ class Notion:
 
     @staticmethod
     def richTextField(field):
-        text = ''
-        for item in field['rich_text']:
-            if text:
-                text += f" {item['plain_text']}"
-            else:
-                text = item['plain_text']
+        content = ''
+        markdown = {
+            'bold': '**',
+            'italic': '__',
+            'code': '`'
+        }
 
-        return text
+        for item in field['rich_text']:
+            text = item['text']['content']
+
+            if 'annotations' in item:
+                formatting = item['annotations']
+
+                for option in formatting:
+                    if option in markdown and formatting[option]:
+                        text = f'{markdown[option]}{text}{markdown[option]}'
+
+            if content:
+                content += text
+            else:
+                content = text
+
+        return content
 
     @staticmethod
     def selectField(field):
