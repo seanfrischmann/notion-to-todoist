@@ -269,7 +269,11 @@ class Notion:
 
     @staticmethod
     def selectField(field):
+        if field['select'] is None:
+            return '(empty)'
+
         return field['select']['name']
+
 
     @staticmethod
     def formulaField(field):
