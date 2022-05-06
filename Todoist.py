@@ -38,9 +38,9 @@ class Todoist:
 
     def setSubProject(self, project: dict):
         if (
-                project['name'] in self.projects and
-                'parent_id' in self.projects[project['name']] and
-                self.projects[project['name']]['parent_id'] == self.main_project['id']
+            project['name'] in self.projects and
+            'parent_id' in self.projects[project['name']] and
+            self.projects[project['name']]['parent_id'] == self.main_project['id']
         ):
             sub_project = self.api.projects.get_by_id(
                 self.projects[project['name']]['id']
@@ -48,7 +48,7 @@ class Todoist:
             sub_project.delete()
 
         self.commit()
-        sub_project= self.createTodoistProject(
+        sub_project = self.createTodoistProject(
             project=project,
             parent_id=self.main_project['id']
         )
@@ -110,7 +110,7 @@ class Todoist:
                 sub_item.update(description=sub_task['description'])
                 sub_item.move(parent_id=item['id'])
 
-                if sub_task['comment']:
+                if 'comment' in sub_task:
                     self.api.notes.add(sub_item['id'], content=sub_task['comment'])
 
                 if sub_task['status'] == 'Complete':

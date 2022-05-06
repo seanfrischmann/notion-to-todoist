@@ -92,9 +92,13 @@ class Notion:
                     if 'Status' in story['properties']:
                         task['status'] = story['properties']['Status']['select']['name']
 
-                    if 'Start Date' in story['properties']:
-                        task['start_date'] = story['properties']['Start Date']['date'][
-                            'start']
+                    task['start_date'] = ''
+                    if (
+                        'Start Date' in story['properties']
+                        and story['properties']['Start Date']['date']
+                    ):
+                        task['start_date'] = \
+                            story['properties']['Start Date']['date']['start']
 
                     notion_tasks = self.getNotionChildren(
                         db_id=database['id'],
@@ -111,15 +115,16 @@ class Notion:
                             'task_id': sub_task['id'],
                             'name': sub_task['properties']['Name']['title'][0][
                                 'plain_text'],
-                            'description': self.getField(
-                                field=sub_task['properties']['Description']
-                            ),
-                            'comment': self.createProperties(
-                                fields=database['fields']['task'],
-                                properties=sub_task['properties']
-                            ),
+                            'description':
+                                self.createProperties(
+                                    fields=database['fields']['task'],
+                                    properties=sub_task['properties'],
+                                    url=sub_task['url']
+                                ) + "\n" +
+                                self.getField(
+                                    field=sub_task['properties']['Description']),
                             'status': status,
-                            'url': story['url'],
+                            'url': sub_task['url'],
                         })
 
                     sub_project['stories'].append(task)
@@ -140,11 +145,11 @@ class Notion:
         return self.notionRequest(endpoint=endpoint, request_type='post', options=options)
 
     def getNotionChildren(
-            self,
-            db_id: str,
-            parent_id: str,
-            parent_field: str = "Parent",
-            sub_filter=None
+        self,
+        db_id: str,
+        parent_id: str,
+        parent_field: str = "Parent",
+        sub_filter=None
     ):
         endpoint = 'databases/' + db_id + '/query'
         children_filter = {
@@ -274,7 +279,6 @@ class Notion:
 
         return field['select']['name']
 
-
     @staticmethod
     def formulaField(field):
         return field['formula'][field['formula']['type']]
@@ -286,10 +290,10 @@ class Notion:
     @staticmethod
     def dateField(field):
         if (
-                'start' in field['date'] and
-                'end' in field['date'] and
-                field['date']['start'] and
-                field['date']['end']
+            'start' in field['date'] and
+            'end' in field['date'] and
+            field['date']['start'] and
+            field['date']['end']
         ):
             return field['date']['start'] + ' → ' + field['date']['end']
 
