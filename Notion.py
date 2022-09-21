@@ -90,7 +90,7 @@ class Notion:
                     print(f"Reviewing Story {task['name']}")
 
                     if 'Status' in story['properties']:
-                        task['status'] = story['properties']['Status']['select']['name']
+                        task['status'] = story['properties']['Status']['status']['name']
 
                     task['start_date'] = ''
                     if (
@@ -109,7 +109,7 @@ class Notion:
                         status = ''
 
                         if 'Status' in sub_task['properties']:
-                            status = sub_task['properties']['Status']['select']['name']
+                            status = sub_task['properties']['Status']['status']['name']
 
                         task['sub_tasks'].append({
                             'task_id': sub_task['id'],
@@ -206,7 +206,7 @@ class Notion:
 
         if url:
             notionUrl = url.replace('https', 'notion')
-            content = f" --- \n **Ticket:** [Open in Notion]({notionUrl})\n"
+            content = f"**Ticket:** [Open in Notion]({notionUrl})\n"
 
         for field in fields:
             if field in properties:
@@ -216,9 +216,9 @@ class Notion:
                 )
 
         if content and url:
-            content += " --- "
+            content += " \n--- "
         elif content:
-            content = f' --- \n {content} --- '
+            content = f'{content} \n --- '
 
         return content
 
@@ -233,6 +233,9 @@ class Notion:
 
         elif field['type'] == 'select':
             return self.selectField(field)
+
+        elif field['type'] == 'status':
+            return self.selectField(field, 'status')
 
         elif field['type'] == 'formula':
             return self.formulaField(field)
@@ -256,7 +259,10 @@ class Notion:
         }
 
         for item in field['rich_text']:
-            text = item['text']['content']
+            if item['type'] == 'mention':
+                text = item['mention'][item['mention']['type']]['name']
+            else:
+                text = item['text']['content']
 
             if 'annotations' in item:
                 formatting = item['annotations']
@@ -273,11 +279,11 @@ class Notion:
         return content
 
     @staticmethod
-    def selectField(field):
-        if field['select'] is None:
+    def selectField(field, type='select'):
+        if field[type] is None:
             return '(empty)'
 
-        return field['select']['name']
+        return field[type]['name']
 
     @staticmethod
     def formulaField(field):

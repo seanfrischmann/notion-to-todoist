@@ -92,10 +92,10 @@ class Todoist:
         print(f"Creating task {task['name']}")
 
         if complete and task['status'] in complete:
-            item = self.api.quick.add(f"{task['name']} @{tag_name}")
+            item = self.api.quick.add(f"* {task['name']} @{tag_name}")
         else:
             item = self.api.quick.add(
-                f"{task['name']} @{tag_name} {task['start_date']}"
+                f"* {task['name']} @{tag_name} {task['start_date']}"
             )
 
         item = self.api.items.get_by_id(item['id'])
