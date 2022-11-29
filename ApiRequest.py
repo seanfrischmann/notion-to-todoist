@@ -12,14 +12,10 @@ class Main:
     def sync(self):
         for project in self.notion.getProjects():
             self.todo.setMainProject(project)
-            self.todo.commit()
 
             for epic in project['sub_projects']:
                 self.todo.setSubProject(epic)
-                self.todo.commit()
-
-                self.todo.setSetions(project['statuses'])
-                self.todo.commit()
+                self.todo.setSections(project['statuses'])
 
                 for story in epic['stories']:
                     complete = False
@@ -38,9 +34,6 @@ class Main:
                         tag_name=task_tag
                     )
 
-                    self.todo.commit()
-
-            self.todo.resetState()
             print('All Done')
 
 
