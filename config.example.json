@@ -3,56 +3,72 @@
         "api": "2021-05-13",
         "databases": [
             {
-                "skip": true,
+                "skip": false,
                 "name": "Project Name",
+                "complete": [
+                    "Complete",
+                    "Next Release"
+                ],
                 "colors": {
-                    "main": 33,
-                    "sub": 33
+                    "main": 42,
+                    "sub": 43
                 },
-                "complete": ["Next Release"],
                 "fields": {
                     "epic": [
-                        "Sprint Points",
-                        "Status",
-                        "Timeline"
+                        "Sprint ID",
+                        "Total Tasks",
+                        "Dates"
                     ],
                     "story": [
-                        "Feature Branch",
+                        "Task ID",
+                        "Assignee",
                         "Status",
-                        "Story Points"
+                        "Estimates",
+                        "Priority",
+                        "Release",
+                        "Tags",
                     ],
                     "task": [
-                        "Effort Points",
-                        "Feature Branch",
-                        "Status"
+                        "Task ID",
+                        "Status",
+                        "Estimates",
+                        "Tags",
+                        "Priority",
+                        "Release"
                     ]
                 },
                 "filter": {
                     "and": [
                         {
-                            "property": "Type",
-                            "select": {
-                                "equals": "Sprint"
-                            }
-                        },
-                        {
-                            "property": "Status",
-                            "select": {
-                                "equals": "In Progress"
+                            "property": "Sprint status",
+                            "status": {
+                                "equals": "Current"
                             }
                         }
                     ]
                 },
-                "subFilter": {
-                    "property": "Engineers",
+                "id": "The Database ID",
+                "pageNameField": "Sprint name",
+                "storyName": "Task name",
+                "overrideFilter": {
+                    "property": "Assignee",
                     "people": {
-                        "contains": "{personID}"
+                        "contains": "Notion Person ID",
                     }
                 },
-                "id": "{DatabaseID}",
-                "parentField": "Defaults to Parent",
-                "statuses": ["List of different status options"],
-                "taskTag": "Defaults to Notion-Issue // NOTE must exist in ToDoist"
+                "parentField": "Sprint",
+                "taskParent": "Parent-task",
+                "parentDBID": "If the parent db is different, enter the ID here",
+                "statuses": [
+                    "Backlog",
+                    "Ready",
+                    "Planning",
+                    "In Progress",
+                    "Code Review",
+                    "Complete",
+                    "Archive"
+                ],
+                "taskTag": "The tag you want to add to the task"
             }
         ],
         "secret": "",
