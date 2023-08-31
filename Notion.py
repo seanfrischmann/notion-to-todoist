@@ -65,6 +65,10 @@ class Notion:
                 if "subFilter" in database:
                     sub_filter = database["subFilter"]
 
+                override_filter = None
+                if "overrideFilter" in database:
+                    override_filter = database["overrideFilter"]
+
                 db_id = database['id']
                 if database['parentDBID']:
                     db_id = database['parentDBID']
@@ -73,7 +77,8 @@ class Notion:
                     db_id=db_id,
                     parent_id=epic['id'],
                     parent_field=parent_field,
-                    sub_filter=sub_filter
+                    sub_filter=sub_filter,
+                    override_filter=override_filter
                 )
 
                 for story in notion_stories['results']:
@@ -168,7 +173,9 @@ class Notion:
             db_id: str,
             parent_id: str,
             parent_field: str = "Parent",
-            sub_filter=None
+            sub_filter=None,
+            override_filter=None
+
     ):
         endpoint = 'databases/' + db_id + '/query'
         children_filter = {
@@ -185,6 +192,9 @@ class Notion:
                     sub_filter
                 ]
             }
+
+        if override_filter is not None:
+            children_filter = override_filter
 
         options = {
             'data': json.dumps(
