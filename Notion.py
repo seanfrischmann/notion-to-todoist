@@ -135,7 +135,7 @@ class Notion:
                         task['sub_tasks'].append(
                             {
                                 'task_id': sub_task['id'],
-                                'name': sub_task['properties']['Name']['title'][0][
+                                'name': sub_task['properties'][story_name]['title'][0][
                                     'plain_text'],
                                 'description':
                                     self.createProperties(
@@ -144,7 +144,7 @@ class Notion:
                                         url=sub_task['url']
                                     ) + "\n" +
                                     self.getField(
-                                        field=sub_task['properties']['Description']
+                                        field=sub_task['properties']['Summary']
                                     ),
                                 'status': status,
                                 'url': sub_task['url'],
