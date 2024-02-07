@@ -10,12 +10,12 @@ class Main:
         self.notion = Notion(self.config['notion'])
 
     def sync(self):
-        for project in self.notion.getProjects():
-            self.todo.setMainProject(project)
+        for project in self.notion.get_projects():
+            self.todo.set_main_project(project)
 
             for epic in project['sub_projects']:
-                self.todo.setSubProject(epic)
-                self.todo.setSections(project['statuses'])
+                self.todo.set_sub_project(epic)
+                self.todo.set_sections(project['statuses'])
 
                 for story in epic['stories']:
                     complete = False
@@ -27,7 +27,7 @@ class Main:
                     if 'taskTag' in project:
                         task_tag = project['taskTag']
 
-                    self.todo.createTodoistTask(
+                    self.todo.create_todoist_task(
                         task=story,
                         statuses=project['statuses'],
                         complete=complete,

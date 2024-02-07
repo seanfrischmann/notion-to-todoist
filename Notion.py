@@ -11,7 +11,7 @@ class Notion:
         self.secret = config['secret']
         self.url = config['url']
 
-    def getProjects(self):
+    def get_projects(self):
         projects = []
         for database in self.databases:
             if "skip" in database and database["skip"]:
@@ -19,7 +19,7 @@ class Notion:
 
             print(f"Getting notion database {database['name']}")
 
-            notion_database = self.getNotionDatabase(
+            notion_database = self.get_notion_database(
                 db_id=database['id'],
                 db_filter=database['filter']
             )
@@ -48,7 +48,7 @@ class Notion:
                         ' |', ':'
                     ),
                     'color': database['colors']['sub'],
-                    'comment': self.createProperties(
+                    'comment': self.create_properties(
                         fields=database['fields']['epic'],
                         properties=epic['properties']
                     ),
@@ -73,7 +73,7 @@ class Notion:
                 if database['parentDBID']:
                     db_id = database['parentDBID']
 
-                notion_stories = self.getNotionChildren(
+                notion_stories = self.get_notion_children(
                     db_id=db_id,
                     parent_id=epic['id'],
                     parent_field=parent_field,
@@ -90,12 +90,12 @@ class Notion:
                         'story_id': story['id'],
                         'name': story['properties'][story_name]['title'][0]['plain_text'],
                         'description':
-                            self.createProperties(
+                            self.create_properties(
                                 fields=database['fields']['story'],
                                 properties=story['properties'],
                                 url=story['url']
                             ) + "\n" +
-                            self.getField(field=story['properties']['Summary'])
+                            self.get_field(field=story['properties']['Summary'])
                         ,
                         'end_date': '',
                         'status': '',
@@ -104,7 +104,7 @@ class Notion:
                     }
 
                     print(f"Reviewing Story {task['name']}")
-                    print(self.getPageComments(story['id']))
+                    print(self.get_page_comments(story['id']))
 
                     if 'Status' in story['properties']:
                         task['status'] = story['properties']['Status']['status']['name']
@@ -120,7 +120,7 @@ class Notion:
                     parent_field = "Parent"
                     if database['taskParent']:
                         parent_field = database['taskParent']
-                    notion_tasks = self.getNotionChildren(
+                    notion_tasks = self.get_notion_children(
                         db_id=db_id,
                         parent_id=story['id'],
                         parent_field=parent_field
@@ -138,12 +138,12 @@ class Notion:
                                 'name': sub_task['properties'][story_name]['title'][0][
                                     'plain_text'],
                                 'description':
-                                    self.createProperties(
+                                    self.create_properties(
                                         fields=database['fields']['task'],
                                         properties=sub_task['properties'],
                                         url=sub_task['url']
                                     ) + "\n" +
-                                    self.getField(
+                                    self.get_field(
                                         field=sub_task['properties']['Summary']
                                     ),
                                 'status': status,
@@ -159,16 +159,16 @@ class Notion:
 
         return projects
 
-    def getNotionDatabase(self, db_id: str, db_filter: dict):
+    def get_notion_database(self, db_id: str, db_filter: dict):
         endpoint = 'databases/' + db_id + '/query'
 
         options = {
             'data': json.dumps({'filter': db_filter})
         }
 
-        return self.notionRequest(endpoint=endpoint, request_type='post', options=options)
+        return self.notion_request(endpoint=endpoint, request_type='post', options=options)
 
-    def getNotionChildren(
+    def get_notion_children(
             self,
             db_id: str,
             parent_id: str,
@@ -204,16 +204,16 @@ class Notion:
             )
         }
 
-        return self.notionRequest(endpoint=endpoint, request_type='post', options=options)
+        return self.notion_request(endpoint=endpoint, request_type='post', options=options)
 
-    def getPageComments(self, story_id: str):
-        return self.notionRequest(
+    def get_page_comments(self, story_id: str):
+        return self.notion_request(
             endpoint='comments',
             request_type='get',
             options={'block_id': story_id}
         )
 
-    def notionRequest(self, endpoint: str, request_type: str, options: dict):
+    def notion_request(self, endpoint: str, request_type: str, options: dict):
         url = self.url + endpoint
 
         headers = {
@@ -222,7 +222,7 @@ class Notion:
             'Content-Type': 'application/json'
         }
 
-        return self.makeRequest(
+        return self.make_request(
             request_type=request_type,
             url=url,
             headers=headers,
@@ -230,7 +230,7 @@ class Notion:
         )
 
     @staticmethod
-    def makeRequest(request_type: str, url: str, headers: dict, options: dict):
+    def make_request(request_type: str, url: str, headers: dict, options: dict):
         import requests
 
         if request_type == 'post':
@@ -242,16 +242,16 @@ class Notion:
 
         return {}
 
-    def createProperties(self, fields, properties, url=False):
+    def create_properties(self, fields, properties, url=False):
         content = ''
 
         if url:
-            notionUrl = url.replace('https', 'notion')
-            content = f"**Ticket:** [Open in Notion]({notionUrl})\n"
+            notion_url = url.replace('https', 'notion')
+            content = f"**Ticket:** [Open in Notion]({notion_url})\n"
 
         for field in fields:
             if field in properties:
-                value = self.getField(properties[field])
+                value = self.get_field(properties[field])
                 content += (
                     f"**{field}:** {value}\n"
                 )
@@ -263,29 +263,29 @@ class Notion:
 
         return content
 
-    def getField(self, field):
+    def get_field(self, field):
         if type(field) is list and field:
             field = field[0]
         elif type(field) is list:
             return ''
 
         if field['type'] == 'rich_text':
-            return self.richTextField(field)
+            return self.rich_text_field(field)
 
         elif field['type'] == 'select':
-            return self.selectField(field)
+            return self.select_field(field)
 
         elif field['type'] == 'status':
-            return self.selectField(field, 'status')
+            return self.select_field(field, 'status')
 
         elif field['type'] == 'formula':
-            return self.formulaField(field)
+            return self.formula_field(field)
 
         elif field['type'] == 'rollup':
-            return self.rollupField(field)
+            return self.rollup_field(field)
 
         elif field['type'] == 'date':
-            return self.dateField(field)
+            return self.date_field(field)
 
         elif field['type'] == 'unique_id':
             return f"{field['unique_id']['prefix']}-{field['unique_id']['number']}"
@@ -308,7 +308,7 @@ class Notion:
             return field[field['type']]
 
     @staticmethod
-    def richTextField(field):
+    def rich_text_field(field):
         content = ''
         markdown = {
             'bold': '**',
@@ -347,22 +347,22 @@ class Notion:
         return content
 
     @staticmethod
-    def selectField(field, type='select'):
+    def select_field(field, type='select'):
         if field[type] is None:
             return '(empty)'
 
         return field[type]['name']
 
     @staticmethod
-    def formulaField(field):
+    def formula_field(field):
         return field['formula'][field['formula']['type']]
 
     @staticmethod
-    def rollupField(field):
+    def rollup_field(field):
         return field['rollup'][field['rollup']['type']]
 
     @staticmethod
-    def dateField(field):
+    def date_field(field):
         if (
                 'start' in field['date'] and
                 'end' in field['date'] and
