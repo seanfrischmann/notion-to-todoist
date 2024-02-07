@@ -104,7 +104,8 @@ class Notion:
                     }
 
                     print(f"Reviewing Story {task['name']}")
-                    print(self.get_page_comments(story['id']))
+                    task['comments'] = [self.rich_text_field(comment) for comment in
+                                        self.get_page_comments(story['id'])]
 
                     if 'Status' in story['properties']:
                         task['status'] = story['properties']['Status']['status']['name']
@@ -135,6 +136,9 @@ class Notion:
                         task['sub_tasks'].append(
                             {
                                 'task_id': sub_task['id'],
+                                'comments':
+                                    [self.rich_text_field(comment) for comment in
+                                     self.get_page_comments(sub_task['id'])],
                                 'name': sub_task['properties'][story_name]['title'][0][
                                     'plain_text'],
                                 'description':
@@ -211,7 +215,7 @@ class Notion:
             endpoint='comments',
             request_type='get',
             options={'block_id': story_id}
-        )
+        )['results']
 
     def notion_request(self, endpoint: str, request_type: str, options: dict):
         url = self.url + endpoint
@@ -338,6 +342,10 @@ class Notion:
                 for option in formatting:
                     if option in markdown and formatting[option]:
                         text = f'{markdown[option]}{text}{markdown[option]}'
+
+            href = item['href']
+            if href:
+                text = f'[{text}]({href})'
 
             if content:
                 content += text

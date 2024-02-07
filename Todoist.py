@@ -114,6 +114,9 @@ class Todoist:
         if 'comment' in task and task['comment']:
             self.api.add_comment(task_id=item.id, content=task['comment'])
 
+        for comment in task['comments']:
+            self.api.add_comment(task_id=item.id, content=comment)
+
         if task['sub_tasks']:
             for sub_task in task['sub_tasks']:
                 print(f"Adding subtask {sub_task['name']} to {task['name']}")
