@@ -101,6 +101,7 @@ class Todoist:
                 section_id=self.sections[section].id,
                 project_id=self.sub_project.id
             )
+            self.api.close_task(task_id=item.id)
         else:
             item = self.api.add_task(
                 content=task['name'],
